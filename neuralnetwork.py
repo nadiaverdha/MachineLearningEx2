@@ -87,7 +87,18 @@ def sigmoid_prime(x):
     return sigmoid(x) * (1-sigmoid(x))
 
 
+def softmax(x):
+    e_x = np.exp(x - np.max(x, axis=1, keepdims=True))
+    return e_x / np.sum(e_x, axis=1, keepdims=True)
+
+
+def softmax_prime(x):
+    p = softmax(x)
+    return p * (1 - p)
+
 # loss function and its derivative
+
+
 def mse(y_true, y_pred):
     return np.mean(np.power(y_true-y_pred, 2))
 
@@ -161,7 +172,8 @@ class Network:
 
             # average error per sample
             err /= samples
-            err_vect[i] = err
+            #  err_vect[i] = err
+            err_vect = np.append(err_vect, err)  # append error to the array
             # print('epoch %d/%d   error=%f' % (i+1, epochs, err))
         return err_vect
 
@@ -188,7 +200,8 @@ class Network:
 
             # average error per sample
             err /= samples
-            err_vect[i] = err
+            #  err_vect[i] = err
+            err_vect = np.append(err_vect, err)  # append error to the array
             # print('epoch %d/%d   error=%f' % (i+1, epochs, err))
         return err_vect
 
@@ -256,9 +269,9 @@ class Network:
     def nn_evaluate_one_hot(self, x_train, y_train, x_test, y_test, epochs, learning_rate):
         self.fit(x_train, y_train, epochs, learning_rate)
 
-        y_train_pred = self.predict(X_train)
+        y_train_pred = self.predict(x_train)
         y_train_pred = np.concatenate(y_train_pred)
-        y_test_pred = self.predict(X_test)
+        y_test_pred = self.predict(x_test)
         y_test_pred = np.concatenate(y_test_pred)
 
         # Convert one-hot encoded predictions back to class labels
