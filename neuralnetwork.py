@@ -165,8 +165,32 @@ class Network:
             # print('epoch %d/%d   error=%f' % (i+1, epochs, err))
         return err_vect
 
-    def fit_batch(self,):
-        pass
+    def fit_batch(self, x_train, y_train, epochs, learning_rate):
+        samples = len(x_train)  # length of the training set
+        err_vect = np.zeros(epochs)
+        # training loop
+        for i in range(0, epochs):
+            err = 0
+            for j in range(0, samples):  # through all training samples
+                # forward propagation
+                output = x_train[j, :]
+                for layer in self.layers:
+                    output = layer.forward_propagation(output)
+
+                # compute loss
+                err += self.loss(y_train[j], output)
+
+            # backward propagation - after all input samples have been propagated forwardly
+            error = self.loss_prime(y_train, output)
+            error = error.sum()
+            for layer in reversed(self.layers):
+                error = layer.backward_propagation(error, learning_rate)
+
+            # average error per sample
+            err /= samples
+            err_vect[i] = err
+            # print('epoch %d/%d   error=%f' % (i+1, epochs, err))
+        return err_vect
 
     def plot_error_curve(self, err_vect):
         plt.figure(figsize=(10, 6))
@@ -218,6 +242,63 @@ class Network:
         ax[0].set_title("Confusion matrix: train data")
 
         c_2 = confusion_matrix(y_true=y_test, y_pred=y_test_pred)
+        cmd_2 = ConfusionMatrixDisplay(c_2, display_labels=['0', '1', '2'])
+        cmd_2.plot(ax=ax[1], cmap=plt.cm.Blues)
+        ax[1].set_title("Confusion matrix: test data")
+
+        plt.tight_layout()
+        plt.suptitle("Neural Network: our implementation",
+                     fontsize=15, ha='center')
+        plt.subplots_adjust(top=0.85)
+
+        plt.show()
+
+    def nn_evaluate_one_hot(self, x_train, y_train, x_test, y_test, epochs, learning_rate):
+        self.fit(x_train, y_train, epochs, learning_rate)
+
+        y_train_pred = self.predict(X_train)
+        y_train_pred = np.concatenate(y_train_pred)
+        y_test_pred = self.predict(X_test)
+        y_test_pred = np.concatenate(y_test_pred)
+
+        # Convert one-hot encoded predictions back to class labels
+        y_train_pred_labels = np.argmax(y_train_pred, axis=1)
+        y_test_pred_labels = np.argmax(y_test_pred, axis=1)
+
+        # Convert one-hot encoded true labels back to class labels
+        y_train_labels = np.argmax(y_train, axis=1)
+        y_test_labels = np.argmax(y_test, axis=1)
+
+        # accuracy
+        print("#"*50)
+        print("Accuracy on train: ", accuracy_score(
+            y_true=y_train_labels, y_pred=y_train_pred_labels))
+        print("Accuracy on test: ", accuracy_score(
+            y_true=y_test_labels, y_pred=y_test_pred_labels))
+        # recall
+        print("#"*50)
+        print("Recall on train: ", recall_score(y_true=y_train_labels,
+              y_pred=y_train_pred_labels, average='micro'))
+        print("Recall on test: ", recall_score(y_true=y_test_labels,
+              y_pred=y_test_pred_labels, average='micro'))
+        # precision
+        print("#"*50)
+        print("Precision on train: ", precision_score(
+            y_true=y_train_labels, y_pred=y_train_pred_labels, average='micro'))
+        print("Precision on test: ", precision_score(
+            y_true=y_test_labels, y_pred=y_test_pred_labels, average='micro'))
+
+        # plot confusion matrices
+        print("#"*50)
+        fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(15, 5))
+
+        c_1 = confusion_matrix(y_true=y_train_labels,
+                               y_pred=y_train_pred_labels)
+        cmd_1 = ConfusionMatrixDisplay(c_1, display_labels=['0', '1', '2'])
+        cmd_1.plot(ax=ax[0], cmap=plt.cm.Blues)
+        ax[0].set_title("Confusion matrix: train data")
+
+        c_2 = confusion_matrix(y_true=y_test_labels, y_pred=y_test_pred_labels)
         cmd_2 = ConfusionMatrixDisplay(c_2, display_labels=['0', '1', '2'])
         cmd_2.plot(ax=ax[1], cmap=plt.cm.Blues)
         ax[1].set_title("Confusion matrix: test data")
