@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # sklearn
-from sklearn.metrics import recall_score, accuracy_score, precision_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import recall_score, accuracy_score, precision_score, confusion_matrix, ConfusionMatrixDisplay, balanced_accuracy_score
 
 
 # fully - connected layer
@@ -64,58 +64,6 @@ class ActivationLayer:
     # learning_rate not used, there are no parameters to update
     def backward_propagation(self, output_error, learning_rate):
         return self.activation_prime(self.input) * output_error
-
-
-# Different activation functions and their derivatives
-
-# for binary classification
-
-# hiperbolical tan
-def tanh(x):
-    return np.tanh(x)
-
-
-def tanh_prime(x):
-    return 1-np.tanh(x)**2
-
-
-def sigmoid(x):
-    return 1/(1 + np.exp(-x))
-
-
-def sigmoid_prime(x):
-    return sigmoid(x) * (1-sigmoid(x))
-
-
-def softmax(x):
-    e_x = np.exp(x - np.max(x, axis=1, keepdims=True))
-    return e_x / np.sum(e_x, axis=1, keepdims=True)
-
-
-def softmax_prime(x):
-    p = softmax(x)
-    return p * (1 - p)
-
-# loss function and its derivative
-
-
-def mse(y_true, y_pred):
-    return np.mean(np.power(y_true-y_pred, 2))
-
-
-def mse_prime(y_true, y_pred):
-    return 2*(y_pred-y_true)/y_true.size
-
-
-# another option for loss function
-def categorical_cross_entropy(y_true, y_pred):
-    # clipping predicted values, helps to avoid numerical instability
-    y_pred = np.clip(y_pred, 1e-7, 1 - 1e-7)
-    return -np.sum(y_true * np.log(y_pred))
-
-
-def categorical_cross_entropy_prime(y_true, y_pred):
-    return y_pred - y_true
 
 
 class Network:
@@ -213,49 +161,66 @@ class Network:
         plt.ylabel('error')
         plt.title('Average error per sample through training epochs')
 
-    def nn_evaluate(self, x_train, y_train, x_test, y_test, epochs, learning_rate):
+    def nn_evaluate_binary(self, x_train, y_train, x_test, y_test, epochs, learning_rate):
         self.fit(x_train, y_train, epochs, learning_rate)
 
         y_train_pred = self.predict(x_train)
-        y_train_pred = np.concatenate(y_train_pred).flatten()
-        y_train_pred = np.round(y_train_pred).astype(
-            int)  # classification problem
+        # .flatten() does not work with flatten
+        y_train_pred = np.concatenate(y_train_pred)
+        # y_train_pred = np.round(y_train_pred).astype(
+        #     int)  # classification problem
 
         y_test_pred = self.predict(x_test)
-        y_test_pred = np.concatenate(y_test_pred).flatten()
-        y_test_pred = np.round(y_test_pred).astype(
-            int)   # classification problem
+        # .flatten()   does not work with flatten
+        y_test_pred = np.concatenate(y_test_pred)
+        # y_test_pred = np.round(y_test_pred).astype(int)   # classification problem
+
+        # Convert one-hot encoded predictions back to class labels
+        y_train_pred_labels = np.argmax(y_train_pred, axis=1)
+        y_test_pred_labels = np.argmax(y_test_pred, axis=1)
+
+        # Convert one-hot encoded true labels back to class labels
+        y_train_labels = np.argmax(y_train, axis=1)
+        y_test_labels = np.argmax(y_test, axis=1)
 
         # accuracy
         print("#"*50)
         print("Accuracy on train: ", accuracy_score(
-            y_true=y_train, y_pred=y_train_pred))
+            y_true=y_train_labels, y_pred=y_train_pred_labels))
         print("Accuracy on test: ", accuracy_score(
-            y_true=y_test, y_pred=y_test_pred))
+            y_true=y_test_labels, y_pred=y_test_pred_labels))
+
+        print("#"*50)
+        print("Balanced Accuracy on train: ", balanced_accuracy_score(
+            y_true=y_train_labels, y_pred=y_train_pred_labels))
+        print("Balanced Accuracy on test: ", balanced_accuracy_score(
+            y_true=y_test_labels, y_pred=y_test_pred_labels))
         # recall
         print("#"*50)
-        print("Recall on train: ", recall_score(
-            y_true=y_train, y_pred=y_train_pred, average='micro'))
-        print("Recall on test: ", recall_score(
-            y_true=y_test, y_pred=y_test_pred, average='micro'))
+        print("Recall on train: ", recall_score(y_true=y_train_labels,
+              y_pred=y_train_pred_labels))
+        print("Recall on test: ", recall_score(y_true=y_test_labels,
+              y_pred=y_test_pred_labels))
         # precision
         print("#"*50)
         print("Precision on train: ", precision_score(
-            y_true=y_train, y_pred=y_train_pred, average='micro'))
+            y_true=y_train_labels, y_pred=y_train_pred_labels))
         print("Precision on test: ", precision_score(
-            y_true=y_test, y_pred=y_test_pred, average='micro'))
+            y_true=y_test_labels, y_pred=y_test_pred_labels))
 
         # plot confusion matrices
         print("#"*50)
         fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(15, 5))
 
-        c_1 = confusion_matrix(y_true=y_train, y_pred=y_train_pred)
-        cmd_1 = ConfusionMatrixDisplay(c_1, display_labels=['0', '1', '2'])
+        c_1 = confusion_matrix(y_true=y_train_labels,
+                               y_pred=y_train_pred_labels)
+        cmd_1 = ConfusionMatrixDisplay(c_1)
         cmd_1.plot(ax=ax[0], cmap=plt.cm.Blues)
         ax[0].set_title("Confusion matrix: train data")
 
-        c_2 = confusion_matrix(y_true=y_test, y_pred=y_test_pred)
-        cmd_2 = ConfusionMatrixDisplay(c_2, display_labels=['0', '1', '2'])
+        c_2 = confusion_matrix(y_true=y_test_labels,
+                               y_pred=y_test_pred_labels)
+        cmd_2 = ConfusionMatrixDisplay(c_2)
         cmd_2.plot(ax=ax[1], cmap=plt.cm.Blues)
         ax[1].set_title("Confusion matrix: test data")
 
@@ -322,3 +287,66 @@ class Network:
         plt.subplots_adjust(top=0.85)
 
         plt.show()
+
+
+# Different activation functions and their derivatives
+
+# for binary classification
+
+# hiperbolical tan
+def tanh(x):
+    return np.tanh(x)
+
+
+def tanh_prime(x):
+    return 1-np.tanh(x)**2
+
+
+def sigmoid(x):
+    return 1/(1 + np.exp(-x))
+
+
+def sigmoid_prime(x):
+    return sigmoid(x) * (1-sigmoid(x))
+
+
+def softmax(x):
+    e_x = np.exp(x - np.max(x, axis=1, keepdims=True))
+    return e_x / np.sum(e_x, axis=1, keepdims=True)
+
+
+def softmax_prime(x):
+    p = softmax(x)
+    return p * (1 - p)
+
+
+# loss function and its derivative
+
+
+def mse(y_true, y_pred):
+    return np.mean(np.power(y_true-y_pred, 2))
+
+
+def mse_prime(y_true, y_pred):
+    return 2*(y_pred-y_true)/y_true.size
+
+
+# another option for loss function
+def categorical_cross_entropy(y_true, y_pred):
+    # clipping predicted values, helps to avoid numerical instability
+    y_pred = np.clip(y_pred, 1e-7, 1 - 1e-7)
+    return -np.sum(y_true * np.log(y_pred))
+
+
+def categorical_cross_entropy_prime(y_true, y_pred):
+    return y_pred - y_true
+
+
+def binary_cross_entropy(y_true, y_pred):
+    # clipping predicted values, helps to avoid numerical instability
+    y_pred = np.clip(y_pred, 1e-7, 1 - 1e-7)
+    return -np.sum(y_true * np.log(y_pred) + (1 - y_true) * np.log(1 - y_pred))
+
+
+def binary_cross_entropy_prime(y_true, y_pred):
+    return (y_pred - y_true) / (y_pred * (1 - y_pred))
