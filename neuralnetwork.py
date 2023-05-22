@@ -122,10 +122,43 @@ class Network:
 
             # average error per sample
             err /= samples
-            #  err_vect[i] = err
-            err_vect = np.append(err_vect, err)  # append error to the array
+            err_vect[i] = err
+            # err_vect = np.append(err_vect, err)  # append error to the array
             # print('epoch %d/%d   error=%f' % (i+1, epochs, err))
         return err_vect
+    
+    
+    def fit_plus_validation(self, x_train, y_train, x_val, y_val, epochs, learning_rate):
+        samples = len(x_train)  # length of the training set
+        err_vect = np.zeros(epochs)
+        err_vect_val = np.zeros(epochs)
+        # training loop
+        for i in range(0, epochs):
+            err = 0
+            for j in range(0, samples):  # through all training samples
+                # forward propagation
+                output = x_train[j, :]
+                for layer in self.layers:
+                    output = layer.forward_propagation(output)
+
+                # compute loss
+                err += self.loss(y_train[j], output)
+
+                # backward propagation
+                error = self.loss_prime(y_train[j], output)
+                for layer in reversed(self.layers):
+                    error = layer.backward_propagation(error, learning_rate)
+
+            # average error per sample
+            err /= samples
+            err_vect[i] = err
+            
+            # Passing the validation set through current network
+            y_val_pred = self.predict(x_val)
+            err_vect_val[i] = self.loss(y_true=y_val, y_pred=y_val_pred)
+            err_vect_val[i] /= samples
+            
+        return err_vect, err_vect_val
 
     def fit_batch(self, x_train, y_train, epochs, learning_rate):
         samples = len(x_train)  # length of the training set
