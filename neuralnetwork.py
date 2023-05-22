@@ -7,9 +7,11 @@ from sklearn.metrics import recall_score, accuracy_score, precision_score, confu
 
 # fully - connected layer
 class FCLayer:
-    def __init__(self, input_size, output_size):
+    def __init__(self, input_size, output_size, seed=None):
         self.input = None
         self.output = None
+        if seed is not None:
+            np.random.seed(seed)
         # uniform distribution [0, 1] - 0.5 -> [-0.5, 0.5]
         self.weights = np.random.rand(input_size, output_size) - 0.5
         self.bias = np.random.rand(1, output_size) - 0.5
@@ -148,8 +150,8 @@ class Network:
 
             # average error per sample
             err /= samples
-            #  err_vect[i] = err
-            err_vect = np.append(err_vect, err)  # append error to the array
+            err_vect[i] = err
+            # err_vect = np.append(err_vect, err)  # append error to the array
             # print('epoch %d/%d   error=%f' % (i+1, epochs, err))
         return err_vect
 
@@ -357,4 +359,5 @@ def binary_cross_entropy(y_true, y_pred):
 
 
 def binary_cross_entropy_prime(y_true, y_pred):
+    y_pred = np.clip(y_pred, 1e-7, 1 - 1e-7)
     return (y_pred - y_true) / (y_pred * (1 - y_pred))
