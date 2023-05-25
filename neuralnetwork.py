@@ -193,21 +193,32 @@ class Network:
                 # backward propagation
                 error = self.loss_prime(y_train[j], output)
                 for layer in reversed(self.layers):
-                    error = layer.backward_propagation(error, learning_rate)
+                    error = layer.backward_propagation(error, learning_rate)    
 
-            # # average error per sample
-            # err /= samples
-            # err_vect[i] = err
+            # average error per sample (at the end of training epoch)
             
-            # Passing the training set through current network
-            y_train_pred = self.predict(x_train)
-            err_vect_train[i] = self.loss(y_true=y_train, y_pred=y_train_pred)
-            err_vect_train[i] /= x_train.shape[0]
+            err = 0
+            for j in range(0, samples):
+                # forward propagation
+                output = x_train[j, :]
+                for layer in self.layers:
+                    output = layer.forward_propagation(output)
+                # compute loss
+                err += self.loss(y_train[j], output)
+            err /= samples
+            err_vect_train[i] = err
+            
+            err = 0
+            for j in range(0, x_val.shape[0]):
+                # forward propagation
+                output = x_val[j, :]
+                for layer in self.layers:
+                    output = layer.forward_propagation(output)
+                # compute loss
+                err += self.loss(y_val[j], output)
+            err /= x_val.shape[0]
+            err_vect_val[i] = err
 
-            # Passing the validation set through current network
-            y_val_pred = self.predict(x_val)
-            err_vect_val[i] = self.loss(y_true=y_val, y_pred=y_val_pred)
-            err_vect_val[i] /= x_val.shape[0]
 
         return err_vect_train, err_vect_val
 
