@@ -171,13 +171,12 @@ class Network:
             # average error per sample
             err /= samples
             err_vect[i] = err
-            # err_vect = np.append(err_vect, err)  # append error to the array
             # print('epoch %d/%d   error=%f' % (i+1, epochs, err))
         return err_vect
 
     def fit_plus_validation(self, x_train, y_train, x_val, y_val, epochs, learning_rate):
         samples = len(x_train)  # length of the training set
-        err_vect = np.zeros(epochs)
+        err_vect_train = np.zeros(epochs)
         err_vect_val = np.zeros(epochs)
         # training loop
         for i in range(0, epochs):
@@ -196,16 +195,21 @@ class Network:
                 for layer in reversed(self.layers):
                     error = layer.backward_propagation(error, learning_rate)
 
-            # average error per sample
-            err /= samples
-            err_vect[i] = err
+            # # average error per sample
+            # err /= samples
+            # err_vect[i] = err
+            
+            # Passing the training set through current network
+            y_train_pred = self.predict(x_train)
+            err_vect_train[i] = self.loss(y_true=y_train, y_pred=y_train_pred)
+            err_vect_train[i] /= x_train.shape[0]
 
             # Passing the validation set through current network
             y_val_pred = self.predict(x_val)
             err_vect_val[i] = self.loss(y_true=y_val, y_pred=y_val_pred)
-            err_vect_val[i] /= samples
+            err_vect_val[i] /= x_val.shape[0]
 
-        return err_vect, err_vect_val
+        return err_vect_train, err_vect_val
 
     def fit_batch(self, x_train, y_train, epochs, learning_rate):
         samples = len(x_train)  # length of the training set
@@ -231,7 +235,41 @@ class Network:
             # average error per sample
             err /= samples
             err_vect[i] = err
-            # err_vect = np.append(err_vect, err)  # append error to the array
+            # print('epoch %d/%d   error=%f' % (i+1, epochs, err))
+        return err_vect
+    
+    def fit_mini_batch(self, x_train, y_train, epochs, learning_rate, batch_size):
+        samples = len(x_train)  # length of the training set
+        err_vect = np.zeros(epochs)
+        # training loop
+        for i in range(0, epochs):
+            err = 0
+            batch_i = 0
+            output_batch = np.zeros([batch_size, y_train.shape[1]])
+
+            for j in range(0, samples):  # through all training samples
+                # forward propagation
+                output = x_train[j, :]
+                for layer in self.layers:
+                    output = layer.forward_propagation(output)
+                output_batch[batch_i, :] = output
+
+                # compute loss
+                err += self.loss(y_train[j], output)
+           
+                if (j % batch_size == batch_size - 1): # -> update weights
+                    # backward propagation
+                    error = self.loss_prime(y_train[j-(batch_size-1):(j+1), :], output_batch)
+                    error = error.sum()
+                    for layer in reversed(self.layers):
+                        error = layer.backward_propagation(error, learning_rate)
+                    batch_i = 0
+                    output_batch = np.zeros([batch_size, y_train.shape[1]])
+
+        
+            # average error per sample
+            err /= samples
+            err_vect[i] = err
             # print('epoch %d/%d   error=%f' % (i+1, epochs, err))
         return err_vect
 
