@@ -193,10 +193,10 @@ class Network:
                 # backward propagation
                 error = self.loss_prime(y_train[j], output)
                 for layer in reversed(self.layers):
-                    error = layer.backward_propagation(error, learning_rate)    
+                    error = layer.backward_propagation(error, learning_rate)
 
             # average error per sample (at the end of training epoch)
-            
+
             err = 0
             for j in range(0, samples):
                 # forward propagation
@@ -207,7 +207,7 @@ class Network:
                 err += self.loss(y_train[j], output)
             err /= samples
             err_vect_train[i] = err
-            
+
             err = 0
             for j in range(0, x_val.shape[0]):
                 # forward propagation
@@ -218,7 +218,6 @@ class Network:
                 err += self.loss(y_val[j], output)
             err /= x_val.shape[0]
             err_vect_val[i] = err
-
 
         return err_vect_train, err_vect_val
 
@@ -236,20 +235,20 @@ class Network:
                     output = layer.forward_propagation(output)
 
                 # compute loss
-                err += self.loss(y_train[j], output)     
+                err += self.loss(y_train[j], output)
                 error_vect[j, :] = self.loss_prime(y_train[j], output)
 
             # backward propagation - after all input samples have been propagated forwardly
             error = error_vect.mean(axis=0)
-            
+
             for layer in reversed(self.layers):
-                 error = layer.backward_propagation(error, learning_rate)
- 
+                error = layer.backward_propagation(error, learning_rate)
+
             # average error per sample (at the end of training epoch)
             err /= samples
             err_vect[i] = err
         return err_vect
-    
+
     def fit_mini_batch(self, x_train, y_train, epochs, learning_rate, batch_size):
         samples = len(x_train)  # length of the training set
         err_vect = np.zeros(epochs)
@@ -268,21 +267,22 @@ class Network:
 
                 # compute loss
                 err += self.loss(y_train[j], output)
-           
-                if (j % batch_size == batch_size - 1): # -> update weights
+
+                if (j % batch_size == batch_size - 1):  # -> update weights
                     # backward propagation
-                    error = self.loss_prime(y_train[j-(batch_size-1):(j+1), :], output_batch)
+                    error = self.loss_prime(
+                        y_train[j-(batch_size-1):(j+1), :], output_batch)
                     error = error.sum()
                     for layer in reversed(self.layers):
-                        error = layer.backward_propagation(error, learning_rate)
+                        error = layer.backward_propagation(
+                            error, learning_rate)
                     batch_i = 0
                     output_batch = np.zeros([batch_size, y_train.shape[1]])
                 else:
-                    batch_i += 1 # continue
+                    batch_i += 1  # continue
 
-        
             # average error per sample (at the end of training epoch)
-            
+
             err = 0
             for j in range(0, samples):
                 # forward propagation
@@ -293,7 +293,7 @@ class Network:
                 err += self.loss(y_train[j], output)
             err /= samples
             err_vect[i] = err
-            
+
         return err_vect
 
     def plot_error_curve(self, err_vect):
@@ -304,8 +304,13 @@ class Network:
         plt.ylabel('error')
         plt.title('Average error per sample through training epochs')
 
-    def nn_evaluate_binary(self, x_train, y_train, x_test, y_test, epochs, learning_rate):
-        self.fit(x_train, y_train, epochs, learning_rate)
+    def nn_evaluate_binary(self, x_train, y_train, x_test, y_test, epochs, learning_rate, mode=None):
+        if mode == 'batch':
+            self.fit_batch(x_train, y_train, epochs, learning_rate)
+        elif mode == 'ridge':
+            self.fit_plus_ridge(x_train, y_train, epochs, learning_rate)
+        else:
+            self.fit(x_train, y_train, epochs, learning_rate)
 
         y_train_pred = self.predict(x_train)
         # .flatten() does not work with flatten
@@ -374,8 +379,13 @@ class Network:
 
         plt.show()
 
-    def nn_evaluate_one_hot(self, x_train, y_train, x_test, y_test, epochs, learning_rate):
-        self.fit(x_train, y_train, epochs, learning_rate)
+    def nn_evaluate_one_hot(self, x_train, y_train, x_test, y_test, epochs, learning_rate, mode=None):
+        if mode == 'batch':
+            self.fit_batch(x_train, y_train, epochs, learning_rate)
+        elif mode == 'ridge':
+            self.fit_plus_ridge(x_train, y_train, epochs, learning_rate)
+        else:
+            self.fit(x_train, y_train, epochs, learning_rate)
 
         y_train_pred = self.predict(x_train)
         y_train_pred = np.concatenate(y_train_pred)
