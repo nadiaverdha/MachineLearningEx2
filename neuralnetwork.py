@@ -228,6 +228,7 @@ class Network:
         # training loop
         for i in range(0, epochs):
             err = 0
+            error_vect = np.zeros([samples, y_train.shape[1]])
             for j in range(0, samples):  # through all training samples
                 # forward propagation
                 output = x_train[j, :]
@@ -235,18 +236,18 @@ class Network:
                     output = layer.forward_propagation(output)
 
                 # compute loss
-                err += self.loss(y_train[j], output)
+                err += self.loss(y_train[j], output)     
+                error_vect[j, :] = self.loss_prime(y_train[j], output)
 
             # backward propagation - after all input samples have been propagated forwardly
-            error = self.loss_prime(y_train, output)
-            error = error.sum()
+            error = error_vect.mean(axis=0)
+            
             for layer in reversed(self.layers):
-                error = layer.backward_propagation(error, learning_rate)
-
-            # average error per sample
+                 error = layer.backward_propagation(error, learning_rate)
+ 
+            # average error per sample (at the end of training epoch)
             err /= samples
             err_vect[i] = err
-            # print('epoch %d/%d   error=%f' % (i+1, epochs, err))
         return err_vect
     
     def fit_mini_batch(self, x_train, y_train, epochs, learning_rate, batch_size):
@@ -276,12 +277,23 @@ class Network:
                         error = layer.backward_propagation(error, learning_rate)
                     batch_i = 0
                     output_batch = np.zeros([batch_size, y_train.shape[1]])
+                else:
+                    batch_i += 1 # continue
 
         
-            # average error per sample
+            # average error per sample (at the end of training epoch)
+            
+            err = 0
+            for j in range(0, samples):
+                # forward propagation
+                output = x_train[j, :]
+                for layer in self.layers:
+                    output = layer.forward_propagation(output)
+                # compute loss
+                err += self.loss(y_train[j], output)
             err /= samples
             err_vect[i] = err
-            # print('epoch %d/%d   error=%f' % (i+1, epochs, err))
+            
         return err_vect
 
     def plot_error_curve(self, err_vect):
