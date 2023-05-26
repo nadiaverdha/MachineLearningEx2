@@ -382,11 +382,13 @@ class Network:
 
         plt.show()
 
-    def nn_evaluate_one_hot(self, x_train, y_train, x_test, y_test, epochs, learning_rate, mode=None):
+    def nn_evaluate_one_hot(self, x_train, y_train, x_test, y_test, epochs, learning_rate, mode=None, batch_size=None):
         if mode == 'batch':
             self.fit_batch(x_train, y_train, epochs, learning_rate)
         elif mode == 'ridge':
             self.fit_plus_ridge(x_train, y_train, epochs, learning_rate)
+        elif mode == 'mini_batch':
+            self.fit_mini_batch(x_train, y_train, epochs, learning_rate, batch_size)
         else:
             self.fit(x_train, y_train, epochs, learning_rate)
 
@@ -443,6 +445,36 @@ class Network:
         plt.subplots_adjust(top=0.85)
 
         plt.show()
+        
+        
+    def nn_evaluate_one_hot_without_plotting(self, x_train, y_train, x_test, y_test, epochs, learning_rate, mode=None, batch_size=None):
+        if mode == 'batch':
+            self.fit_batch(x_train, y_train, epochs, learning_rate)
+        elif mode == 'ridge':
+            self.fit_plus_ridge(x_train, y_train, epochs, learning_rate)
+        elif mode == 'mini_batch':
+            self.fit_mini_batch(x_train, y_train, epochs, learning_rate, batch_size)
+        else:
+            self.fit(x_train, y_train, epochs, learning_rate)
+
+        y_train_pred = self.predict(x_train)
+        y_train_pred = np.concatenate(y_train_pred)
+        y_test_pred = self.predict(x_test)
+        y_test_pred = np.concatenate(y_test_pred)
+
+        # Convert one-hot encoded predictions back to class labels
+        y_train_pred_labels = np.argmax(y_train_pred, axis=1)
+        y_test_pred_labels = np.argmax(y_test_pred, axis=1)
+
+        # Convert one-hot encoded true labels back to class labels
+        y_train_labels = np.argmax(y_train, axis=1)
+        y_test_labels = np.argmax(y_test, axis=1)
+
+        # accuracy
+        acc_train = accuracy_score(y_true=y_train_labels, y_pred=y_train_pred_labels)
+        acc_test = accuracy_score(y_true=y_test_labels, y_pred=y_test_pred_labels)
+        
+        return acc_train, acc_test
 
 
 # Different activation functions and their derivatives
