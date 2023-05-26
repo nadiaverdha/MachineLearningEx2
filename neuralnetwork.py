@@ -257,6 +257,7 @@ class Network:
             err = 0
             batch_i = 0
             output_batch = np.zeros([batch_size, y_train.shape[1]])
+            error_vect = np.zeros([batch_size, y_train.shape[1]])
 
             for j in range(0, samples):  # through all training samples
                 # forward propagation
@@ -264,20 +265,20 @@ class Network:
                 for layer in self.layers:
                     output = layer.forward_propagation(output)
                 output_batch[batch_i, :] = output
+                error_vect[batch_i, :] = self.loss_prime(y_train[j, :], output)
 
                 # compute loss
                 err += self.loss(y_train[j], output)
 
                 if (j % batch_size == batch_size - 1):  # -> update weights
-                    # backward propagation
-                    error = self.loss_prime(
-                        y_train[j-(batch_size-1):(j+1), :], output_batch)
-                    error = error.sum()
+                    # backward propagation - after batch_size samples have been propagated forwardly
+                    error = error_vect.mean(axis=0)
+                    
                     for layer in reversed(self.layers):
-                        error = layer.backward_propagation(
-                            error, learning_rate)
+                        error = layer.backward_propagation(error, learning_rate)
                     batch_i = 0
                     output_batch = np.zeros([batch_size, y_train.shape[1]])
+                    error_vect = np.zeros([batch_size, y_train.shape[1]])
                 else:
                     batch_i += 1  # continue
 
@@ -304,11 +305,13 @@ class Network:
         plt.ylabel('error')
         plt.title('Average error per sample through training epochs')
 
-    def nn_evaluate_binary(self, x_train, y_train, x_test, y_test, epochs, learning_rate, mode=None):
+    def nn_evaluate_binary(self, x_train, y_train, x_test, y_test, epochs, learning_rate, mode=None, batch_size=None):
         if mode == 'batch':
             self.fit_batch(x_train, y_train, epochs, learning_rate)
         elif mode == 'ridge':
             self.fit_plus_ridge(x_train, y_train, epochs, learning_rate)
+        elif mode == 'mini_batch':
+            self.fit_mini_batch(x_train, y_train, epochs, learning_rate, batch_size)
         else:
             self.fit(x_train, y_train, epochs, learning_rate)
 
