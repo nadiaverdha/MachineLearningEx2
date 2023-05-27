@@ -502,7 +502,10 @@ class Network:
                 self.fit_mini_batch(x_train, y_train, epochs,
                                     learning_rate, batch_size)
         else:
-            self.fit(x_train, y_train, epochs, learning_rate)
+            if batch_mode == 'ridge':
+                self.fit_plus_ridge(x_train, y_train, epochs, learning_rate, reg_lambda)
+            else:
+                self.fit(x_train, y_train, epochs, learning_rate)
 
         y_train_pred = self.predict(x_train)
         y_train_pred = np.concatenate(y_train_pred)
